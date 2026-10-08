@@ -1,0 +1,360 @@
+PROJECT — TINY PLANES (GAME)
+============================
+Type: GAME (mobile). Working title: "Tiny Planes".
+
+This is a game project, distinct from Kim's utility apps (e.g. the Flight Tracker).
+Spiritual sibling of the old flag-quiz app: quick, scoreable, time + accuracy.
+
+UPDATE LOG:
+- 2026-10-08 (later): Added DESIGN NOTES (speed-floor clamp, relative timings,
+  time-vs-distance question) and a ready-to-paste CLAUDE CODE BRIEF for the next
+  iteration. Items marked [PROPOSED] are Claude's suggestions, NOT yet locked by Kim.
+
+====================================================================
+BUILD STATUS (reconciled with the code, 2026-10-08)
+====================================================================
+The prototype has been built in Claude Code and iterated twice; the improvement
+was visibly better. The game lives as an HTML/JS file (index.html / tiny-planes.html)
+wrapped in a thin native Android shell, in Dropbox: /Claude AI Hub/Tiny Planes/.
+Android shell (per its README) is tuned for the Galaxy S24: landscape-locked
+(either way round), true full screen, edge-to-edge incl. camera punch-hole, 120 Hz
+requested, screen kept awake, vibration on hits, pauses when you leave the app.
+Two build routes to an APK: GitHub Actions ("Build APK" workflow) or Android Studio.
+App id: com.kim.tinyplanes.
+
+BUILT SO FAR (confirmed from the game's on-screen UI + README):
+- Core VFR loop: landscape side-scroller, plane, scrolling sky.
+- Floating-joystick steering with the "Steer with your left thumb" hint.
+- Energy bar starting at 100%.
+- Two-minute round timer (shows 2:00) and a ROUND COUNTER ("Round 1").
+- Title screen: "Tap to take off", "Rounds cleared" tally, "Start again from
+  round 1".
+- SOUND + MUSIC toggles — Kim added sound and a short jingle; worked well.
+- Plane BOB animation (bobbing up/down a little) — Kim likes it, keep it.
+- NOTE: energy drain rates, the difficulty-ramp shape, and the exact landing
+  behaviour are in the JS and were NOT directly re-read here (Dropbox text extract
+  strips JS). Treat the TUNING numbers below as the intended spec; confirm against
+  code in Claude Code when next editing.
+
+NOT BUILT YET (deferred layers — confirmed with Kim):
+- Thunder/lightning clouds (and their telegraph) — not added in the first builds.
+- Gas canisters.
+- LEFT/RIGHT THROTTLE control (new idea this session — see CONTROL SCHEME).
+- PLANE TILT / PITCH animation (new idea this session — see PLANE TILT).
+- Endless mode, IFR mode, plane roster, scoring formulas, leaderboards, ads.
+
+PLAYTEST FEEDBACK (2026-10-08):
+- Felt a BIT SLOW. Two minutes may be too long for this kind of game; difficulty
+  may need to ramp more dramatically. (See PACING REVISION below.)
+- Landing sequence was buggy/funny: the plane ended up flying BACKWARDS at the
+  finish line. (See LANDING FIX below.)
+
+--------------------------------------------------------------------
+CORE FRAME (locked with Kim, 2026-10-08)
+--------------------------------------------------------------------
+- CASUAL "time-killer": a game you play for a minute or two while waiting for something.
+- ROUND LENGTH: two minutes or less per round. This is the organising constraint.
+  (UNDER REVIEW — may shorten; see PACING REVISION.)
+- FEEL: quick dopamine / endorphin hit. Pick-up-and-play, one-thumb.
+- "TINY": cute tiny planes AND a tiny, minimal game (both senses — Kim said "yes" to all).
+
+--------------------------------------------------------------------
+BUSINESS MODEL (locked)
+--------------------------------------------------------------------
+- FREE to play, no upfront cost.
+- Revenue = ADVERTISEMENTS only, at launch.
+- Ads must be SMALL and UNOBTRUSIVE and targeted — NOT the 30-second forced
+  interstitials that annoy people. Think small-format, low-friction ad units
+  that generate a revenue stream without wrecking the quick-play feel.
+
+--------------------------------------------------------------------
+PROGRESSION / DIFFICULTY (locked)
+--------------------------------------------------------------------
+- Tetris-style ramp: starts easy, gets harder and faster as you go.
+- Each round: player can either SAVE PROGRESS from earlier, or PROCEED DIRECTLY
+  and push into harder and harder play.
+
+--------------------------------------------------------------------
+PACING REVISION (NOT YET BUILT — planned, 2026-10-08)
+--------------------------------------------------------------------
+Problem from playtest: game felt a bit slow; 2 min may be too long; ramp too gentle.
+Planned fixes (two levers, likely BOTH):
+1. SHORTER ROUND: try ~90s or even ~60s so there's no dead air. (Exact value TBD.)
+2. PUNCHIER RAMP: steeper, possibly ACCELERATING curve rather than linear; slightly
+   more cloud up front so the player is engaged from the off; back half genuinely
+   frantic. (This also makes Endless mode more exciting later.)
+3. PLAYER-DRIVEN SPEED (see CONTROL SCHEME throttle) folds into pacing: "slow"
+   becomes a player choice, not a limitation.
+4. [PROPOSED] Put ROUND LENGTH in ONE config constant and express every in-round
+   timing as a FRACTION of it (see DESIGN NOTES → RELATIVE TIMINGS), so trying
+   60s vs 90s vs 120s is a one-number change.
+5. [OPEN] TIME vs DISTANCE round — see DESIGN NOTES. Must be decided alongside the
+   throttle, because it changes what "faster" means.
+
+--------------------------------------------------------------------
+CONTROL SCHEME (locked with Kim, 2026-10-08; throttle addition NOT YET BUILT)
+--------------------------------------------------------------------
+- FLOATING VIRTUAL JOYSTICK: the joystick appears wherever the player's thumb
+  first touches down, so the player chooses where to place it (no fixed anchor). [BUILT]
+- Analog / continuous steering — suits threading tightening gaps (VFR) and
+  chasing clouds (IFR). [BUILT]
+- LEFT-THUMB NUDGE: gently SUGGEST the LEFT thumb (hint/ghost/glow + one-time
+  prompt); works anywhere, not hard-locked. [BUILT — "Steer with your left thumb"]
+- LEFT / RIGHT THROTTLE (NEW, NOT YET BUILT):
+    * UP/DOWN still steer vertically.
+    * Fly HARD RIGHT = INCREASE speed; fly HARD LEFT = DECREASE speed.
+    * This replaces the old pure "auto-forward, no throttle" rule: the plane still
+      always moves forward at a MINIMUM speed, but the player modulates it.
+    * MUST keep a SPEED FLOOR so hard-left slows but NEVER reverses the plane.
+      (Likely relevant to the backwards-landing bug — see LANDING FIX.)
+    * [PROPOSED] Enforce the floor as a HARD CLAMP in the movement/scroll update
+      (every frame, after all inputs + scripted sequences), NOT only in the
+      joystick→throttle mapping. See DESIGN NOTES → SPEED FLOOR.
+    * Pairs with scoring later: faster flying earns more → speed = the way to chase
+      points, and hands pacing to the player.
+
+--------------------------------------------------------------------
+PLANE TILT / PITCH ANIMATION (NEW, NOT YET BUILT — 2026-10-08)
+--------------------------------------------------------------------
+Purpose: give the plane visual feedback that it's shifting direction / speed — makes
+it feel alive and tells the player what their input is doing.
+Mapping (confirmed with Kim; throttle axis is real-flight-accurate):
+- VERTICAL STEERING:
+    * Climbing / going UP        → pitch NOSE UP (lean back).
+    * Descending / going DOWN    → pitch NOSE DOWN (lean forward).
+- THROTTLE (speed) axis (real-flight-accurate, like a flare):
+    * SLOWING DOWN (flaring)     → pitch NOSE UP.
+    * SPEEDING UP                → pitch NOSE DOWN.
+- Just a few degrees of rotation, EASED smoothly (not snappy).
+- Layer ON TOP of the existing BOB animation (keep the bob — Kim likes it).
+- When the two axes disagree (e.g. climbing while speeding up), BLEND between them
+  so it looks natural.
+
+--------------------------------------------------------------------
+LANDING FIX (NOT YET BUILT — planned, 2026-10-08)
+--------------------------------------------------------------------
+Bug: at the finish line the plane flew BACKWARDS (auto-land fighting the scroll;
+forward speed likely went negative or scroll kept running during handover).
+Fix plan:
+- At the finish line, LOCK OUT throttle/steering input immediately (take controls
+  away cleanly).
+- Force forward speed to a FIXED, gentle positive landing value (never negative).
+- Play the touchdown as a SCRIPTED sequence the player can't drag backwards.
+- Then: hide joystick, round-over animation, round counter +1 (as today).
+- [PROPOSED] The global SPEED FLOOR clamp (see DESIGN NOTES) also applies during
+  landing, as a safety net in case the scripted sequence or scroll handover ever
+  computes a negative speed again.
+- [PROPOSED] Only ONE system moves the world during landing: either the scroll
+  stops and the plane moves, or the plane holds and the scroll continues — never
+  both fighting.
+
+--------------------------------------------------------------------
+GAMEPLAY SETUP / VIEW (locked with Kim, 2026-10-08)
+--------------------------------------------------------------------
+- SIDE-SCROLLER. Phone held in LANDSCAPE orientation. [BUILT]
+- Plane seen FROM THE SIDE, toward the LEFT of screen. Sky SCROLLS right→left. [BUILT]
+- Joystick moves the plane to thread through the cloud field. [BUILT]
+- OBSTACLES (clouds) enter from the RIGHT and travel LEFT toward/past the plane.
+- TETRIS-STYLE RAMP maps to TWO dials turning up over time:
+    1. SCROLL SPEED — clouds come at you faster and faster.
+    2. DENSITY — more clouds, so the clear gaps shrink.
+- LIGHTNING / THUNDER CLOUDS (NOT YET BUILT): a hazard tier. Regular cloud drains a
+  little energy on contact; LIGHTNING cloud drains a LOT.
+    * TELEGRAPHING: flashes at the RIGHT edge a beat BEFORE it scrolls in; AFTER-FLASH
+      on the LEFT edge as it exits.
+
+--------------------------------------------------------------------
+ART STYLE (locked with Kim, 2026-10-08)
+--------------------------------------------------------------------
+- ARCADE PIXEL ART. Start CHUNKY / retro: big visible pixels, limited colour
+  palette, old-school arcade feel. Can refine to a finer pixel look later; engine
+  stays the same.
+- Clouds: BIG and PUFFY. Soft puffy sprites for normal cloud; dramatic bright
+  flash frames for lightning cloud.
+- Plane: chunky, cute, oversized personality; instantly readable. Readability > realism.
+
+--------------------------------------------------------------------
+TUNING / NUMBERS v1 (locked with Kim, 2026-10-08 — VFR; tune by feel)
+--------------------------------------------------------------------
+NOTE: round length & ramp shape are under revision (see PACING REVISION).
+CLOUD COVERAGE RAMP (over the round):
+- Starts at 0% cover (clear blue skies) at take-off.
+- Builds to 80–90% cover by the end.
+- CRITICAL RULE: ALWAYS a guaranteed CLEAR PATH through — a navigable LABYRINTH,
+  never a sealed wall. Failure should feel like the player's fault.
+  * BUILD APPROACH: carve a SAFE CORRIDOR first, THEN fill cloud around it. Do NOT
+    scatter clouds randomly (random scatter can seal the route at high coverage).
+
+LIGHTNING / THUNDER CLOUDS (NOT YET BUILT):
+- First exposure at ~45 seconds into the round (relative to final round length).
+  [PROPOSED as fraction: 37.5% of the round — i.e. 45s of 120s.]
+- Build to AT MOST 20–30% of screen AREA by the end.
+
+ENERGY:
+- Start at 100%. [BUILT: starts at 100%]
+- Energy only DRAINS in VFR (no passive refill); recovery is via gas canisters only.
+- NORMAL cloud contact: drains 10% PER SECOND (100 → 0 in 10s of continuous contact).
+- THUNDER cloud contact: drains 30% PER SECOND (100 → 0 in ~3.3s). [NOT YET BUILT]
+
+GAS CANISTERS (NOT YET BUILT — VFR booster, restores energy):
+- Each restores +25% energy (capped at 100%).
+- Three per round, placed at: 1:00, 1:30, 1:45 (rescale if round length changes).
+  [PROPOSED as fractions: 50%, 75%, 87.5% of the round.]
+- Design tension: sit in spots that cost some cloud contact to reach (risk/reward);
+  cap at 100% nudges grabbing them when low.
+
+--------------------------------------------------------------------
+ROUND SHAPE / BOOKENDS (locked with Kim, 2026-10-08)
+--------------------------------------------------------------------
+- Each round is bookended by a RUNWAY at each end.
+- START: take off from a runway into CLEAR VFR skies. Clouds then appear; boosters
+  start showing up; pace + density build (the ramp).
+- END: a FINISH LINE / LANDING STRIP arrives and marks the end.
+  * Landing is NOT a skill test — reaching the finish line is enough.
+  * Plane AUTO-LANDS, joystick DISAPPEARS, short "round over" animation, ROUND
+    COUNTER ticks up. [BUILT — but see LANDING FIX for the backwards-plane bug]
+- Between rounds: TAP TO LAUNCH the next (harder) round — not an automatic roll-on.
+
+--------------------------------------------------------------------
+GAME MODES (locked with Kim, 2026-10-08) — same engine, swapped end condition
+--------------------------------------------------------------------
+1. ROUND MODE [core loop BUILT]:
+   - Take-off-to-landing structure; tap to launch each successive harder round;
+     round counter climbs. End condition = THE CLOCK.
+     (See DESIGN NOTES → TIME vs DISTANCE: throttle may make this a distance end.)
+2. ENDLESS MODE [NOT YET BUILT]:
+   - No finish line; sky keeps escalating until ENERGY runs out. High-score chase.
+- LEADERBOARDS (NOT YET BUILT): furthest round (round mode) vs longest survival (endless).
+- NOTE: "how far you got" = round number (round mode) or survival time (endless).
+
+====================================================================
+DESIGN NOTES (added 2026-10-08 — Claude's suggestions, NOT yet locked)
+====================================================================
+1. SPEED FLOOR = HARD CLAMP [PROPOSED]
+   - The landing bug and the throttle share one root risk: forward speed going
+     negative. Put a single clamp in the per-frame movement/scroll update:
+       speed = max(SPEED_FLOOR, speed)   (applied AFTER input + scripted sequences)
+   - This protects normal play, the throttle's hard-left, AND the landing handover.
+   - The throttle mapping can still have its own floor, but the clamp is the
+     guarantee.
+
+2. RELATIVE TIMINGS [PROPOSED]
+   - One constant: ROUND_LENGTH_SECONDS. Every in-round event is a fraction of it:
+       * Thunder clouds first appear ......... 0.375 (45s of 120s)
+       * Gas canister #1 ...................... 0.50  (1:00 of 2:00)
+       * Gas canister #2 ...................... 0.75  (1:30 of 2:00)
+       * Gas canister #3 ...................... 0.875 (1:45 of 2:00)
+       * Coverage ramp 0% → 80–90% ............ 0.0 → 1.0
+   - Result: switching 120s → 90s → 60s rescales everything automatically.
+   - Check after shortening: at 60s, canister #3 lands at 52.5s and thunder at
+     22.5s — confirm by feel that this still reads well, not too crowded.
+
+3. TIME vs DISTANCE ROUND [OPEN — decide with Kim]
+   - With a throttle, "round length" can mean two things:
+       A) FIXED TIME (today): the finish line arrives at e.g. 90s regardless of
+          speed. Flying fast covers more ground but doesn't end the round sooner;
+          speed must be rewarded via SCORE.
+       B) FIXED DISTANCE: the runway is a set distance away. Flying fast reaches it
+          sooner — aggressive players get shorter, riskier rounds; cautious players
+          get longer, safer ones. Pacing becomes fully player-owned.
+   - Option B fits "slow becomes a player choice" (PACING #3) very naturally, but
+     the ramp would then need to key off DISTANCE travelled, not time elapsed, and
+     the timer UI would become a distance/progress bar.
+   - Option A is simpler to build and keeps the "2:00" countdown UI.
+   - Either is fine; the relative-timings constant (note 2) works for both if the
+     fraction is "fraction of round completed" rather than "seconds elapsed".
+
+====================================================================
+NEXT ITERATION — PRIORITISED (for the next Claude Code pass, 2026-10-08)
+====================================================================
+1. LANDING FIX (kill the backwards-plane bug) — see LANDING FIX. Quick, high-value.
+2. PACING: shorten the round (try 90s/60s) + steeper/accelerating ramp — see PACING.
+3. LEFT/RIGHT THROTTLE control (with a speed FLOOR) — see CONTROL SCHEME.
+4. PLANE TILT / PITCH animation (nose up climbing/slowing, nose down descending/
+   speeding; eased; on top of the bob) — see PLANE TILT. Cheap, big feel win.
+5. THEN resume deferred layers: thunder clouds (+telegraph), gas canisters, endless
+   mode, IFR, scoring/leaderboards, ads.
+BEFORE EDITING: re-read the current JS values (round length, ramp, drain, landing)
+in Claude Code and confirm they match this doc; update either side so they agree.
+
+====================================================================
+CLAUDE CODE BRIEF — NEXT ITERATION (ready to paste, 2026-10-08)
+====================================================================
+Paste everything between the ---8<--- lines into Claude Code, opened on the
+/Claude AI Hub/Tiny Planes/ project. Fill in the two [CHOOSE] values first.
+
+---8<---
+You're working on "Tiny Planes", a casual landscape side-scroller (HTML/JS in a
+thin Android WebView shell, tuned for Galaxy S24). Plane on the left, sky scrolls
+right→left, floating-joystick steering, energy bar, round timer, round counter,
+auto-landing at a finish line. Keep everything that works: sound/music toggles,
+jingle, the plane's bob animation, the left-thumb hint, the title screen.
+
+STEP 0 — READ BEFORE EDITING
+Report back the current values in the JS for: round length, cloud ramp shape
+(how speed + density change over time), normal-cloud energy drain, and how the
+landing sequence moves the plane and the scroll. Then proceed.
+
+STEP 1 — LANDING FIX (backwards-plane bug)
+At the finish line the plane currently ends up flying backwards.
+- On reaching the finish line, immediately lock out all steering/throttle input.
+- Set forward speed to a fixed, gentle positive landing value.
+- During landing, only ONE system moves the world (either stop the scroll and
+  move the plane, or hold the plane and keep scrolling) — never both.
+- Then: hide joystick → round-over animation → round counter +1 (as now).
+Acceptance: across 10 landings, including ones where I'm holding hard left on
+the joystick as I cross the line, the plane never moves backwards.
+
+STEP 2 — GLOBAL SPEED FLOOR
+Add a constant SPEED_FLOOR (> 0) and clamp forward speed to at least that value
+every frame, after input and after any scripted sequence (including landing).
+Acceptance: no code path can produce negative forward speed.
+
+STEP 3 — PACING
+- Move round length into one constant ROUND_LENGTH_SECONDS = [CHOOSE: 60 or 90].
+- Express in-round event timings as fractions of the round, so changing the
+  constant rescales everything: thunder first appears at 0.375, gas canisters
+  at 0.50 / 0.75 / 0.875 (these features aren't built yet — just set up the
+  constants for later).
+- Make the ramp ACCELERATING rather than linear (e.g. ease-in curve) on both
+  dials: scroll speed and cloud density. Slightly more cloud in the opening
+  seconds so there's no dead air; the final third should feel frantic.
+- Keep the critical rule: always a guaranteed clear path (carve a safe corridor
+  first, then fill cloud around it). Coverage still ends around 80–90%.
+Acceptance: the timer shows the new length; the first ~5s already has something
+to dodge; the end of the round is clearly harder than the middle; never a sealed
+wall of cloud.
+
+STEP 4 — LEFT/RIGHT THROTTLE
+- Joystick up/down still steers vertically (unchanged).
+- Joystick right = speed up, joystick left = slow down, analog.
+- Plane always moves forward at least SPEED_FLOOR; hard left slows, never reverses.
+- Round end condition: [CHOOSE: A = fixed time (finish line at the timer's end,
+  speed only affects score later) / B = fixed distance (faster reaches the runway
+  sooner; ramp and progress UI key off distance travelled)].
+Acceptance: holding hard right feels noticeably faster; holding hard left feels
+noticeably slower but still moving forward.
+
+STEP 5 — PLANE TILT / PITCH
+- Climbing → nose up; descending → nose down.
+- Slowing (throttle left) → nose up (like a flare); speeding up → nose down.
+- Blend the two when they disagree. Only a few degrees, eased smoothly.
+- Layer on top of the existing bob — do not remove or change the bob.
+Acceptance: the tilt reads clearly but never looks snappy or jittery.
+
+AFTER EACH STEP: tell me what changed and which constants to tweak by feel.
+Don't add thunder clouds, gas canisters, endless mode, IFR, scoring or ads yet.
+---8<---
+
+--------------------------------------------------------------------
+OPEN / TO DECIDE (whole game)
+--------------------------------------------------------------------
+- Exact revised round length + ramp curve (see PACING REVISION).
+- TIME vs DISTANCE round end once throttle exists (see DESIGN NOTES #3).
+- Whether to adopt the speed-floor clamp + relative timings (DESIGN NOTES #1, #2).
+- Scoring formula per scenario.
+- Which ad network / small-format ad unit fits the no-interruption rule.
+- Platform: Android CONFIRMED in practice (built + wrapped for Galaxy S24).
+  (Control scheme, gameplay view, round shape, game modes, art style resolved;
+  prototype BUILT; throttle + landing fix + pacing revision + plane tilt are the
+  live to-dos.)

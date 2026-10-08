@@ -1,0 +1,23 @@
+ADD THESE 8 FILES FROM DROPBOX BEFORE UPLOADING  (then delete this note)
+=======================================================================
+Dropbox's text reader strips HTML/XML markup, so these could not be copied
+faithfully. Take them straight from Dropbox: /Claude AI Hub/Tiny Planes/
+and drop each one into the folder shown (all folders already exist here).
+
+Dropbox file                    ->  Put it here
+------------------------------      ------------------------------------------------
+index.html                      ->  app/src/main/assets/index.html          (THE GAME)
+AndroidManifest.xml             ->  app/src/main/AndroidManifest.xml
+strings.xml                     ->  app/src/main/res/values/strings.xml
+colors.xml                      ->  app/src/main/res/values/colors.xml
+themes.xml                      ->  app/src/main/res/values/themes.xml
+ic_launcher.xml                 ->  app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+ic_launcher_foreground.xml      ->  app/src/main/res/drawable/ic_launcher_foreground.xml
+ic_launcher_background.xml      ->  app/src/main/res/drawable/ic_launcher_background.xml
+
+NOT needed: tiny-planes.html (identical copy of index.html) and "build (1).gradle"
+(already included here as app/build.gradle).
+
+If the build says it can't find @mipmap/ic_launcher or a launcher drawable, open
+AndroidManifest.xml / ic_launcher.xml and check which folder name it expects
+(mipmap vs drawable) — or ask Claude Code to fix the resource paths.
